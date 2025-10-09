@@ -5,7 +5,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register, StarTools
 from astrbot.api import logger
 from .script.get_server_info import get_server_status
-from .script.get_img import generate_server_info_image
+from .script.template_selector import get_img
 from .script.json_operate import (
     read_json, add_data, del_data, update_data, 
     get_all_servers, get_server_info, get_server_by_name,
@@ -114,7 +114,7 @@ class MyPlugin(Star):
                     mcinfo_img = await self.get_img(server_info['name'], server_info['host'], server_id, str(json_path))
                     if mcinfo_img:
                         message_chain.append(Comp.Image.fromBase64(mcinfo_img))
-                    else:
+
                 except Exception as e:
                     continue
 
@@ -340,7 +340,7 @@ class MyPlugin(Star):
             # 如果有服务器ID，则在名称前添加ID
             display_name = f"[{server_id}]{server_name}" if server_id else server_name
             
-            mcinfo_img = await generate_server_info_image(
+            mcinfo_img = await get_img(
                 players_list=info['players_list'],
                 latency=info['latency'],
                 server_name=display_name,
