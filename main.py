@@ -5,7 +5,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register, StarTools
 from astrbot.api import logger
 from .script.get_server_info import get_server_status
-from .script.template_selector import get_img
+from .script.template_selector import write_config
 from .script.json_operate import (
     read_json, add_data, del_data, update_data, 
     get_all_servers, get_server_info, get_server_by_name,
@@ -41,6 +41,9 @@ HELP_INFO = """
 
 /mccleanup
 --手动触发自动清理（删除10天未查询成功的服务器）
+
+/mctem
+--切换图片渲染模板
 """
 
 @register("astrbot_mcgetter", "QiChen", "查询mc服务器信息和玩家列表,渲染为图片", "1.4.0")
@@ -68,6 +71,16 @@ class MyPlugin(Star):
             包含帮助信息的消息结果
         """
         yield event.plain_result(HELP_INFO)
+
+    @filter.command("mctem")
+    async def change_mctem(self,event: AstrMessageEvent,name: str)-> MessageEventResult:
+        if name is None:
+            yield event.plain_result("请指定模板名称")
+
+        if write_config(name):
+            yield event.plain_result("模板切换成功")
+        else:
+            yield event.plain_result("模板配置文件写入失败")
 
     @filter.command("mc")
     async def mcgetter(self, event: AstrMessageEvent) -> Optional[MessageEventResult]:

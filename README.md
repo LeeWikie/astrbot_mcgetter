@@ -20,6 +20,7 @@ AstrBot Minecraft服务器信息查询插件，用于查询Minecraft服务器状
 - 📝 **群组独立** - 每个群组独立管理服务器列表
 - 🧹 **自动清理** - 自动删除长时间未查询成功的服务器
 - 🆔 **ID管理** - 基于ID的服务器管理系统，支持名称和ID双重操作
+- 🕹️ **自定义模板** - 用户可自定义图片渲染效果,支持动态加载
 
 ## 安装说明
 
@@ -32,16 +33,17 @@ AstrBot Minecraft服务器信息查询插件，用于查询Minecraft服务器状
 
 ### 基础命令
 
-| 命令 | 参数 | 说明 |
-|------|------|------|
-| `/mchelp` | 无 | 查看帮助信息 |
-| `/mc` | 无 | 查询所有保存的服务器状态 |
-| `/mcadd` | 服务器名称 服务器地址 [force] | 添加要查询的服务器 |
-| `/mcget` | 服务器名称/ID | 获取指定服务器的地址信息 |
-| `/mcdel` | 服务器名称/ID | 删除指定的服务器 |
-| `/mcup` | 服务器名称/ID [新名称] [新地址] | 更新服务器信息 |
-| `/mclist` | 无 | 列出所有服务器及其ID |
-| `/mccleanup` | 无 | 手动触发自动清理 |
+| 命令           | 参数                   | 说明           |
+|--------------|----------------------|--------------|
+| `/mchelp`    | 无                    | 查看帮助信息       |
+| `/mc`        | 无                    | 查询所有保存的服务器状态 |
+| `/mcadd`     | 服务器名称 服务器地址 [force]  | 添加要查询的服务器    |
+| `/mcget`     | 服务器名称/ID             | 获取指定服务器的地址信息 |
+| `/mcdel`     | 服务器名称/ID             | 删除指定的服务器     |
+| `/mcup`      | 服务器名称/ID [新名称] [新地址] | 更新服务器信息      |
+| `/mclist`    | 无                    | 列出所有服务器及其ID  |
+| `/mccleanup` | 无                    | 手动触发自动清理     |
+| `/mctem`     | 模板名称                 | 切换图片渲染模板     |
 
 ### 详细说明
 
@@ -117,6 +119,128 @@ AstrBot Minecraft服务器信息查询插件，用于查询Minecraft服务器状
 • 过期服务器1 (ID: 2) - 地址: example.com:25565 - 最后成功: 2024-01-01 12:00:00
 • 过期服务器2 (ID: 3) - 地址: test.server.com - 最后成功: 2024-01-02 15:30:00
 ```
+
+## 自定义模板
+
+### 使用说明
+
+1. 编写或下载自定义处理脚本
+    脚本需满足以下条件:
+    - 调用函数必须命名为draw_image
+    - 需包含以下参数:
+        - players_list: list(玩家名称列表)
+        - latency: int(延迟)
+        - server_name: str(服务器名称)
+        - plays_max: int(最大玩家数)
+        - plays_online: int(在线玩家数)
+        - server_version: str(服务器版本)
+        - icon_base64: Optional[str] = None(服务器图标,可为空)
+    - 返回值需为图片的base64 string值
+
+示例:
+```python
+
+async def draw_image(
+    players_list: list,
+    latency: int,
+    server_name: str,
+    plays_max: int,
+    plays_online: int,
+    server_version: str,
+    icon_base64: Optional[str] = None
+) -> str:
+    """生成服务器信息图片并返回base64编码"""
+    
+    # 异步获取图标
+    server_icon = await fetch_icon(icon_base64)
+    
+    # 配置参数
+    BG_COLOR = (34, 34, 34)
+    TEXT_COLOR = (255, 255, 255)
+    ACCENT_COLOR = (85, 255, 85)
+    WARNING_COLOR = (255, 170, 0)
+    ERROR_COLOR = (255, 85, 85)
+    
+    # 字体配置
+    try:
+        title_font = await load_font(30)
+        text_font = await load_font(20)
+        small_font = await load_font(18)
+    except IOError:
+        title_font = ImageFont.load_default(30)
+        text_font = ImageFont.load_default(20)
+        small_font = ImageFont.load_default(18)
+    
+    # 计算布局参数
+    icon_size = 64 if server_icon else 0
+    base_y = 20
+    text_x = 20 + icon_size + 20
+    
+    # 自动计算图片高度
+    line_height = 30
+    player_lines = (len(players_list) // 4) + 1
+    img_height = 180 + (player_lines * line_height) + (20 if server_icon else 0)
+    
+    # 创建画布
+    img = Image.new("RGB", (600, img_height), color=BG_COLOR)
+    draw = ImageDraw.Draw(img)
+    
+    # 绘制服务器图标
+    if server_icon:
+        icon_mask = Image.new("L", (64, 64), 0)
+        mask_draw = ImageDraw.Draw(icon_mask)
+        mask_draw.rounded_rectangle((0, 0, 64, 64), radius=10, fill=255)
+        server_icon.thumbnail((64, 64))
+        img.paste(server_icon, (20, base_y), icon_mask)
+    
+    # 服务器信息绘制（保持原有绘制逻辑不变）
+    draw.text((text_x, base_y), server_name, font=title_font, fill=ACCENT_COLOR)
+    base_y += 40
+    
+    version_text = f"版本: {server_version}"
+    latency_color = ACCENT_COLOR if latency < 100 else WARNING_COLOR if latency < 200 else ERROR_COLOR
+    latency_text = f"延迟: {latency}ms"
+    
+    draw.text((text_x, base_y), version_text, font=text_font, fill=TEXT_COLOR)
+    draw.text((400, base_y), latency_text, font=text_font, fill=latency_color)
+    base_y += 40
+    
+    online_text = f"在线玩家 ({plays_online}/{plays_max})"
+    draw.text((text_x, base_y), online_text, font=text_font, fill=ACCENT_COLOR)
+    base_y += 40
+    
+    if players_list:
+        chunks = [players_list[i:i+4] for i in range(0, len(players_list), 4)]
+        for chunk in chunks:
+            players_line = " • ".join(chunk)
+            draw.text((text_x + 20, base_y), players_line, font=small_font, fill=TEXT_COLOR)
+            base_y += line_height
+    else:
+        draw.text((text_x + 20, base_y), "暂无玩家在线", font=small_font, fill=TEXT_COLOR)
+        base_y += line_height
+    
+    draw.rounded_rectangle([10, 10, img.width-10, img.height-10], radius=10, outline=ACCENT_COLOR, width=2)
+    
+    # 转换为base64
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    # 返回base64 bytes
+    return img_base64
+
+```
+
+2. 将脚本存放到Astrbot的插件数据目录,例如Windows中的路径为
+```路径
+...\AstrBot\data\plugin_data
+```
+
+具体而言,存放在plugin_data\astrbot_mcgetter\template下
+
+命名为{name}.py,其中name就是模板名称
+
+你也可以手动修改template.txt来决定使用的模板
 
 ## JSON配置系统
 
@@ -275,7 +399,7 @@ A: 是的，所有命令都支持通过名称或ID进行操作
 
 - [ ] 玩家名称颜色随在线天数改变
 - [ ] 服务器状态历史记录
-- [ ] 自定义图片主题
+- [x] 自定义图片主题
 - [ ] 定时自动查询功能
 - [ ] 服务器分组管理
 

@@ -108,14 +108,16 @@ async def _generate_default_image(
         icon_base64=icon_base64
     )
 
-def write_config(template_name: str) -> None:
+def write_config(template_name: str) -> bool:
     """将模板名称写入配置文件。"""
     try:
         with CONFIG_FILE.open("w", encoding="utf-8") as f:
             f.write(template_name)
         logger.info(f"成功将 '{template_name}' 写入 {CONFIG_FILE}")
+        return True
     except Exception as e:
         logger.info(f"写入 {CONFIG_FILE} 出错：{e}")
+        return False
 
 def read_config() -> str:
     """从配置文件读取模板名称，若文件不存在则创建并写入默认值 'default'。"""
