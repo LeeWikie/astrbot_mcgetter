@@ -137,7 +137,7 @@ class MyPlugin(Star):
                 yield event.plain_result("没有可用的服务器信息，请检查服务器是否在线")
                 
         except Exception as e:
-            yield event.plain_result("查询服务器信息时发生错误")
+            yield event.plain_result("查询服务器信息时发生错误:"+str(e))
 
     @filter.command("mcadd")
     async def mcadd(self, event: AstrMessageEvent, name: str, host: str, force: bool = False) -> MessageEventResult:
@@ -176,7 +176,7 @@ class MyPlugin(Star):
                             yield event.plain_result(f"已存在相同地址的服务器 {server_info['name']} (ID: {server_id})")
                             return
             except Exception as e:
-                yield event.plain_result("检查服务器地址时发生错误")
+                yield event.plain_result("检查服务器地址时发生错误:"+str(e))
                 return
                 
             if await add_data(json_path, name, host):
@@ -192,7 +192,7 @@ class MyPlugin(Star):
                 yield event.plain_result(f"无法添加 {name}，请检查是否已存在")
                 
         except Exception as e:
-            yield event.plain_result("添加服务器时发生错误")
+            yield event.plain_result("添加服务器时发生错误:"+str(e))
 
     @filter.command("mcdel")
     async def mcdel(self, event: AstrMessageEvent, identifier: str) -> MessageEventResult:
@@ -216,7 +216,7 @@ class MyPlugin(Star):
                 yield event.plain_result(f"无法删除 {identifier}，请检查是否存在")
                 
         except Exception as e:
-            yield event.plain_result("删除服务器时发生错误")
+            yield event.plain_result("删除服务器时发生错误:"+str(e))
 
     @filter.command("mcget")
     async def mcget(self, event: AstrMessageEvent, identifier: str) -> MessageEventResult:
@@ -236,7 +236,7 @@ class MyPlugin(Star):
             yield event.plain_result(f"{server_info['host']}")
             
         except Exception as e:
-            yield event.plain_result("获取服务器信息时发生错误")
+            yield event.plain_result("获取服务器信息时发生错误:"+str(e))
 
     @filter.command("mcup")
     async def mcup(self, event: AstrMessageEvent, identifier: str, new_name: Optional[str] = None, new_host: Optional[str] = None) -> MessageEventResult:
@@ -277,7 +277,7 @@ class MyPlugin(Star):
                 yield event.plain_result(f"无法更新 {identifier}，请检查是否存在或名称是否冲突")
                 
         except Exception as e:
-            yield event.plain_result("更新服务器信息时发生错误")
+            yield event.plain_result("更新服务器信息时发生错误:"+str(e))
 
     @filter.command("mclist")
     async def mclist(self, event: AstrMessageEvent) -> MessageEventResult:
@@ -300,7 +300,7 @@ class MyPlugin(Star):
             yield event.plain_result(server_list.strip())
             
         except Exception as e:
-            yield event.plain_result("获取服务器列表时发生错误")
+            yield event.plain_result("获取服务器列表时发生错误:"+str(e))
 
     @filter.command("mccleanup")
     async def mccleanup(self, event: AstrMessageEvent) -> MessageEventResult:
@@ -322,7 +322,7 @@ class MyPlugin(Star):
                 yield event.plain_result("没有需要清理的服务器")
                 
         except Exception as e:
-            yield event.plain_result("自动清理时发生错误")
+            yield event.plain_result("自动清理时发生错误:"+str(e))
 
     async def get_img(self, server_name: str, host: str, server_id: Optional[str] = None, json_path: Optional[str] = None) -> Optional[str]:
         """
