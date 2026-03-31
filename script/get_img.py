@@ -92,6 +92,8 @@ async def generate_server_info_image(
     server_ip: Optional[str] = None,
     is_online: bool = True
 ) -> str:
+    # 清理可能包含换行符的字符串
+    server_version = server_version.strip() if server_version else ""
     # --- 颜色与样式配置 ---
     C_BG = (242, 245, 248)
     C_CARD = (255, 255, 255)
