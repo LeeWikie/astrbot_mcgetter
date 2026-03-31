@@ -122,52 +122,67 @@ async def generate_server_info_image(
     display_motd = motd if is_online else "§8服务器目前处于离线状态"
     
     # 解析并模拟换行
-    temp_draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
+    # 使用足够大的临时图像来准确测量文本宽度
+    temp_img = Image.new("RGB", (max_motd_w + 100, 100), color=(255, 255, 255))
+    temp_draw = ImageDraw.Draw(temp_img)
     all_segments = parse_minecraft_string(display_motd, default_color=C_SUB)
     
     lines_segments: List[List[TextSegment]] = []
     
     for seg in all_segments:
         # 对每一个片段处理可能的长文本换行
-        words = seg.text # 这里不按空格分，MC按字符宽度
+        text = seg.text
         active_font = f_motd_bold if seg.is_bold else f_motd
         
-        current_line_segments = []
-        current_w = 0
-        current_segment_text = ""
+        # 首先按显式换行符分割
+        parts = text.split('\n')
         
-        for char in words:
-            # 处理用户输入中的显式换行符，避免 textlength 无法处理多行文本
-            if char == '\n':
-                if current_segment_text:
-                    current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
-                    current_segment_text = ""
-                if current_line_segments:
-                    lines_segments.append(current_line_segments)
-                current_line_segments = []
-                current_w = 0
+        for part_idx, part in enumerate(parts):
+            if not part:
                 continue
-
-            char_w = temp_draw.textlength(char, font=active_font)
-            if current_w + char_w > max_motd_w:
-                # 换行
-                if current_segment_text:
-                    current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
-                if current_line_segments:
-                    lines_segments.append(current_line_segments)
-                # 重置当前行
-                current_line_segments = []
-                current_w = 0
-                current_segment_text = ""
             
-            current_segment_text += char
-            current_w += char_w
-        
-        # 处理片段末尾剩余内容
-        if current_segment_text:
-            current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
-        if current_line_segments:
-            lines_segments.append(current_line_segments)
+            # 测量整个片段的宽度
+            seg_width = temp_draw.textlength(part, font=active_font)
+            
+            if seg_width <= max_motd_w:
+                # 片段足够短，直接添加
+                if part:
+                    lines_segments.append([TextSegment(part, seg.color, seg.is_bold)])
+            else:
+                # 片段太长，需要按字符换行
+                current_line = []
+                current_w = 0
+                current_text = ""
+                
+                for char in part:
+                    char_w = temp_draw.textlength(char, font=active_font)
+                    
+                    if current_w + char_w > max_motd_w:
+                        # 需要换行
+                        if current_text:
+                            current_line.append(TextSegment(current_text, seg.color, seg.is_bold))
+                        lines_segments.append(current_line)
+                        
+                        # 开始新行
+                        current_line = []
+                        current_w = 0
+                        current_text = ""
+                    
+                    current_text += char
+                    current_w += char_w
+                
+                # 处理最后一行
+                if current_text:
+                    current_line.append(TextSegment(current_text, seg.color, seg.is_bold))
+                if current_line:
+                    lines_segments.append(current_line)
+            
+            # 如果不是最后一个部分，添加换行
+            if part_idx < len(parts) - 1:
+                lines_segments.append([])
+
+    # 移除空行
+    lines_segments = [line for line in lines_segments if line]
 
     # 动态计算高度
     header_h = icon_size + card_inner * 2
