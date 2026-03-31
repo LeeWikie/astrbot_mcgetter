@@ -5,7 +5,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register, StarTools
 from astrbot.api import logger
 from .script.get_server_info import get_server_status
-from .script.template_selector import write_config, get_img
+from .script.template_selector import write_config, get_img as generate_server_image
 from .script.json_operate import (
     read_json, add_data, del_data, update_data, 
     get_all_servers, get_server_info, get_server_by_name,
@@ -124,12 +124,13 @@ class MyPlugin(Star):
             
             for server_id, server_info in servers.items():
                 try:
-                    mcinfo_img = await self.get_img(server_info['name'], server_info['host'], server_id, str(json_path))
+                    mcinfo_img = await self._fetch_and_generate_img(server_info['name'], server_info['host'], server_id, str(json_path))
                     if mcinfo_img:
                         # 直接发送图片，不进行回复和艾特
                         await event.reply([Comp.Image.fromBase64(mcinfo_img)])
                         sent_any = True
                 except Exception as e:
+                    logger.error(f"处理服务器 {server_info['name']} 时出错: {e}")
                     continue
             
             # 如果没有发送任何图片，发送提示
@@ -324,7 +325,7 @@ class MyPlugin(Star):
         except Exception as e:
             yield event.plain_result("自动清理时发生错误:"+str(e))
 
-    async def get_img(self, server_name: str, host: str, server_id: Optional[str] = None, json_path: Optional[str] = None) -> Optional[str]:
+    async def _fetch_and_generate_img(self, server_name: str, host: str, server_id: Optional[str] = None, json_path: Optional[str] = None) -> Optional[str]:
         """
         获取服务器信息图片
 
@@ -353,7 +354,8 @@ class MyPlugin(Star):
             # 如果有服务器ID，则在名称前添加ID
             display_name = f"[{server_id}]{server_name}" if server_id else server_name
             
-            mcinfo_img = await get_img(
+            # 调用 template_selector 的 get_img 函数生成图片
+            mcinfo_img = await generate_server_image(
                 latency=info['latency'],
                 server_name=display_name,
                 plays_max=info['plays_max'],
@@ -366,6 +368,7 @@ class MyPlugin(Star):
             return mcinfo_img
             
         except Exception as e:
+            logger.error(f"生成服务器图片失败: {e}")
             # 更新查询失败状态
             if json_path and server_id:
                 await update_server_status(json_path, server_id, False)
