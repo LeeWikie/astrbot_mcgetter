@@ -22,7 +22,9 @@ async def get_img(
     server_version: str,
     icon_base64: Optional[str] = None,
     motd: str = "",
-    players_list: Optional[List[str]] = None
+    players_list: Optional[List[str]] = None,
+    server_ip: Optional[str] = None,
+    is_online: bool = True
 ) -> str:
     """
     生成服务器信息图片并返回 base64 字符串。
@@ -98,7 +100,9 @@ async def _generate_default_image(
     server_version: str,
     icon_base64: Optional[str] = None,
     motd: str = "",
-    players_list: Optional[List[str]] = None
+    players_list: Optional[List[str]] = None,
+    server_ip: Optional[str] = None,
+    is_online: bool = True
 ) -> str:
     """生成默认服务器信息图片的辅助函数。"""
     return await generate_server_info_image(
@@ -108,7 +112,9 @@ async def _generate_default_image(
         plays_max=plays_max,
         plays_online=plays_online,
         server_version=server_version,
-        icon_base64=icon_base64
+        icon_base64=icon_base64,
+        server_ip=server_ip,
+        is_online=is_online
     )
 
 def write_config(template_name: str) -> bool:

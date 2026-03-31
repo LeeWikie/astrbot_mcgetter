@@ -340,11 +340,27 @@ class MyPlugin(Star):
         """
         try:
             info = await get_server_status(host)
-            if not info:
+            is_online = info is not None
+            
+            if not is_online:
                 # 更新查询失败状态
                 if json_path and server_id:
                     await update_server_status(json_path, server_id, False)
-                return None
+                # 仍然生成离线卡片
+                display_name = f"[{server_id}]{server_name}" if server_id else server_name
+                mcinfo_img = await generate_server_image(
+                    latency=0,
+                    server_name=display_name,
+                    plays_max=0,
+                    plays_online=0,
+                    server_version="离线",
+                    icon_base64=None,
+                    motd="",
+                    players_list=[],
+                    server_ip=host,
+                    is_online=False
+                )
+                return mcinfo_img
 
             # 更新查询成功状态
             if json_path and server_id:
@@ -363,7 +379,9 @@ class MyPlugin(Star):
                 server_version=info['server_version'],
                 icon_base64=info['icon_base64'],
                 motd=info.get('motd', ''),
-                players_list=info.get('players_list', [])
+                players_list=info.get('players_list', []),
+                server_ip=host,
+                is_online=True
             )
             return mcinfo_img
             
