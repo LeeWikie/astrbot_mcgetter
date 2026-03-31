@@ -11,18 +11,9 @@ async def load_font(font_size, weight="regular"):
     weight: 'bold' 或 'regular'
     """
     system_fonts = [
-        # macOS
-        '/System/Library/Fonts/PingFang.ttc',
-        '/System/Library/Fonts/STHeiti Light.ttc',
         # Windows
         'C:/Windows/Fonts/msyhhl.ttc',  # 微软雅黑细体
         'C:/Windows/Fonts/msyh.ttc',    # 微软雅黑
-        # Linux 苹方字体 (需手动下载安装)
-        '/usr/share/fonts/opentype/PingFang.ttc',
-        '/usr/share/fonts/truetype/PingFang.ttc',
-        '/usr/share/fonts/PingFang.ttc',
-        '~/.fonts/PingFang.ttc',
-        '~/.local/share/fonts/PingFang.ttc',
         # Linux 其他中文字体
         '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
         '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
