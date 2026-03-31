@@ -15,13 +15,14 @@ TEMPLATE_DIR = DATA_DIR / "template"
 TEMPLATE_DIR.mkdir(parents=True, exist_ok=True)
 
 async def get_img(
-    players_list: List[str],
     latency: int,
     server_name: str,
     plays_max: int,
     plays_online: int,
     server_version: str,
-    icon_base64: Optional[str] = None
+    icon_base64: Optional[str] = None,
+    motd: str = "",
+    players_list: Optional[List[str]] = None
 ) -> str:
     """
     生成服务器信息图片并返回 base64 字符串。
@@ -30,7 +31,7 @@ async def get_img(
     config = read_config()
     if config == "default":
         return await _generate_default_image(
-            players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+            latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
         )
 
     # 尝试加载自定义模板
@@ -39,7 +40,7 @@ async def get_img(
         if not template_file.is_file():
             logger.info(f"模板文件 {template_file} 不存在，使用默认模板。")
             return await _generate_default_image(
-                players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+                latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
             )
 
         # 动态加载模板模块
@@ -48,7 +49,7 @@ async def get_img(
         if not spec or not spec.loader:
             logger.info(f"无法加载 {template_file} 的模块规格，使用默认模板。")
             return await _generate_default_image(
-                players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+                latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
             )
 
         module = importlib.util.module_from_spec(spec)
@@ -59,25 +60,26 @@ async def get_img(
         if not hasattr(module, "draw_image"):
             logger.info(f"模板 {config} 缺少 'draw_image' 函数，使用默认模板。")
             return await _generate_default_image(
-                players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+                latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
             )
 
         # 调用自定义模板的 draw_image 函数
         result = await module.draw_image(
-            players_list=players_list,
             latency=latency,
             server_name=server_name,
             plays_max=plays_max,
             plays_online=plays_online,
             server_version=server_version,
-            icon_base64=icon_base64
+            icon_base64=icon_base64,
+            motd=motd,
+            players_list=players_list
         )
 
         # 验证返回结果是否为字符串
         if not isinstance(result, str):
             logger.info(f"模板 {config} 返回的 base64 字符串无效，使用默认模板。")
             return await _generate_default_image(
-                players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+                latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
             )
 
         return result
@@ -85,27 +87,28 @@ async def get_img(
     except Exception as e:
         logger.info(f"加载或执行模板 {config} 出错：{e}，使用默认模板。")
         return await _generate_default_image(
-            players_list, latency, server_name, plays_max, plays_online, server_version, icon_base64
+            latency, server_name, plays_max, plays_online, server_version, icon_base64, motd, players_list
         )
 
 async def _generate_default_image(
-    players_list: List[str],
     latency: int,
     server_name: str,
     plays_max: int,
     plays_online: int,
     server_version: str,
-    icon_base64: Optional[str]
+    icon_base64: Optional[str] = None,
+    motd: str = "",
+    players_list: Optional[List[str]] = None
 ) -> str:
     """生成默认服务器信息图片的辅助函数。"""
     return await generate_server_info_image(
-        players_list=players_list,
         latency=latency,
         server_name=server_name,
         plays_max=plays_max,
         plays_online=plays_online,
         server_version=server_version,
-        icon_base64=icon_base64
+        icon_base64=icon_base64,
+        motd=motd
     )
 
 def write_config(template_name: str) -> bool:

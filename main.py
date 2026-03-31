@@ -354,13 +354,14 @@ class MyPlugin(Star):
             display_name = f"[{server_id}]{server_name}" if server_id else server_name
             
             mcinfo_img = await get_img(
-                players_list=info['players_list'],
                 latency=info['latency'],
                 server_name=display_name,
                 plays_max=info['plays_max'],
                 plays_online=info['plays_online'],
                 server_version=info['server_version'],
-                icon_base64=info['icon_base64']
+                icon_base64=info['icon_base64'],
+                motd=info.get('motd', ''),
+                players_list=info.get('players_list', [])
             )
             return mcinfo_img
             

@@ -13,13 +13,13 @@ async def test_basic_motd():
     motd = "欢迎来到我的测试服务器！\n这是一个充满挑战的生存世界。"
     
     result = await generate_server_info_image(
-        motd=motd,
         latency=45,
         server_name="我的世界服务器",
         plays_max=20,
         plays_online=5,
         server_version="1.20.4",
-        icon_base64=None
+        icon_base64=None,
+        motd=motd
     )
 
     image_data = base64.b64decode(result)
@@ -41,13 +41,13 @@ async def test_long_motd():
     )
     
     result = await generate_server_info_image(
-        motd=motd,
         latency=35,
         server_name="长公告压力测试服",
         plays_max=100,
         plays_online=12,
         server_version="1.21.1",
-        icon_base64=None
+        icon_base64=None,
+        motd=motd
     )
     
     image_data = base64.b64decode(result)
@@ -65,13 +65,13 @@ async def test_high_ping_red():
     motd = "连接不佳，请检查网络状况。"
     
     result = await generate_server_info_image(
-        motd=motd,
         latency=250, # 高延迟
         server_name="国外高延迟服",
         plays_max=50,
         plays_online=3,
         server_version="1.20.2",
-        icon_base64=None
+        icon_base64=None,
+        motd=motd
     )
     
     image_data = base64.b64decode(result)

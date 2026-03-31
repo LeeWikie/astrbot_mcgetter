@@ -55,6 +55,7 @@ async def get_server_status(host):
             "plays_online": plays_online,  # 在线玩家数
             "server_version": server_version,  # 服务器游戏版本
             "icon_base64": icon_data,  # 服务器图标base64
+            "motd": status.description,  # 服务器MOTD
         }
 
     except (socket.gaierror, ConnectionRefusedError) as e:
