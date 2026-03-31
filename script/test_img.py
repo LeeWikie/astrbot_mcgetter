@@ -1,6 +1,6 @@
 """
 同步更新后的测试脚本
-测试 get_img.py 中的 generate_server_info_image 函数 (MOTD版本)
+测试 get_img.py 中的 generate_server_info_image 函数 (MOTD颜色版本)
 """
 import asyncio
 import base64
@@ -13,13 +13,13 @@ async def test_basic_motd():
     motd = "欢迎来到我的测试服务器！\n这是一个充满挑战的生存世界。"
     
     result = await generate_server_info_image(
+        motd=motd,
         latency=45,
         server_name="我的世界服务器",
         plays_max=20,
         plays_online=5,
         server_version="1.20.4",
-        icon_base64=None,
-        motd=motd
+        icon_base64=None
     )
 
     image_data = base64.b64decode(result)
@@ -32,46 +32,42 @@ async def test_basic_motd():
     return str(output_path)
 
 
-async def test_long_motd():
-    """测试 2: 超长 MOTD（测试自动折行和高度自适应）"""
-    motd = (
-        "这是一个非常非常长的服务器公告，用来测试代码中的自动折行逻辑是否正常工作。"
-        "如果这个公告足够长，图片的高度应该会根据内容的行数自动向下延伸，"
-        "而不会导致文字重叠或超出边框。"
-    )
+async def test_colored_motd():
+    """测试 2: 带颜色的 MOTD"""
+    motd = "§a欢迎来到 §b我的 §c测试服务器！\n§e这是一个 §6充满挑战 §d的生存世界。"
     
     result = await generate_server_info_image(
+        motd=motd,
         latency=35,
-        server_name="长公告压力测试服",
+        server_name="彩色MOTD测试服",
         plays_max=100,
         plays_online=12,
         server_version="1.21.1",
-        icon_base64=None,
-        motd=motd
+        icon_base64=None
     )
     
     image_data = base64.b64decode(result)
-    output_path = Path(__file__).parent / "example_long_motd.png"
+    output_path = Path(__file__).parent / "example_colored.png"
     
     with open(output_path, "wb") as f:
         f.write(image_data)
     
-    print(f"长公告测试图片已保存到: {output_path}")
+    print(f"彩色MOTD测试图片已保存到: {output_path}")
     return str(output_path)
 
 
 async def test_high_ping_red():
     """测试 3: 高延迟测试（变色灯测试）"""
-    motd = "连接不佳，请检查网络状况。"
+    motd = "§c连接不佳，请检查网络状况。"
     
     result = await generate_server_info_image(
+        motd=motd,
         latency=250, # 高延迟
         server_name="国外高延迟服",
         plays_max=50,
         plays_online=3,
         server_version="1.20.2",
-        icon_base64=None,
-        motd=motd
+        icon_base64=None
     )
     
     image_data = base64.b64decode(result)
@@ -84,15 +80,41 @@ async def test_high_ping_red():
     return str(output_path)
 
 
+async def test_bold_motd():
+    """测试 4: 带格式的 MOTD（粗体等）"""
+    motd = "§l§a这是粗体绿色文字\n§o§b这是斜体蓝色文字"
+    
+    result = await generate_server_info_image(
+        motd=motd,
+        latency=50,
+        server_name="格式测试服",
+        plays_max=20,
+        plays_online=8,
+        server_version="1.20.4",
+        icon_base64=None
+    )
+    
+    image_data = base64.b64decode(result)
+    output_path = Path(__file__).parent / "example_bold.png"
+    
+    with open(output_path, "wb") as f:
+        f.write(image_data)
+    
+    print(f"格式测试图片已保存到: {output_path}")
+    return str(output_path)
+
+
 if __name__ == "__main__":
     print("开始运行同步测试...")
     
     # 执行测试
     path1 = asyncio.run(test_basic_motd())
-    path2 = asyncio.run(test_long_motd())
+    path2 = asyncio.run(test_colored_motd())
     path3 = asyncio.run(test_high_ping_red())
+    path4 = asyncio.run(test_bold_motd())
     
     print(f"\n✅ 所有测试完成!")
-    print(f"1. 标准测试: {path1}")
-    print(f"2. 长文折行: {path2}")
-    print(f"3. 状态变色: {path3}")
+    print(f"1. 基本测试: {path1}")
+    print(f"2. 彩色MOTD: {path2}")
+    print(f"3. 高延迟测试: {path3}")
+    print(f"4. 格式测试: {path4}")
