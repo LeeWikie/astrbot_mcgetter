@@ -7,7 +7,7 @@ async def load_font(font_size):
     system_fonts = [
         '/System/Library/Fonts/PingFang.ttc', # macOS
         'C:/Windows/Fonts/msyh.ttc',           # Windows
-        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc', # Linux
+        '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc', # Linux
         'msyh.ttf'
     ]
     for path in system_fonts:
