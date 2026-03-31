@@ -1,9 +1,8 @@
 from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
-from typing import Optional, List, Tuple, Dict
+from typing import Optional, List, Tuple
 from pathlib import Path
-import re
 
 # Minecraft 1.8.9 标准颜色代码 (包含暗色和亮色变体)
 MC_COLORS = {
@@ -103,6 +102,7 @@ async def generate_server_info_image(
     C_BORDER = (235, 238, 242)
     C_ONLINE = (34, 197, 94)
     C_OFFLINE = (156, 163, 175)
+    C_BLACK = (0, 0, 0)  # MOTD 统一黑色
 
     # 字体加载
     f_bold = await load_font("PingFang Bold", 26)
@@ -119,10 +119,10 @@ async def generate_server_info_image(
     max_motd_w = img_w - (padding + card_inner) * 2
     
     # 离线处理
-    display_motd = motd if is_online else "§8服务器目前处于离线状态"
+    display_motd = motd if is_online else ""
     
-    # 解析 MOTD
-    all_segments = parse_minecraft_string(display_motd, default_color=C_SUB)
+    # 解析 MOTD（保留片段信息用于换行）
+    all_segments = parse_minecraft_string(display_motd, default_color=C_BLACK)
     
     # 使用足够大的临时图像来准确测量文本宽度
     temp_img = Image.new("RGB", (max_motd_w + 500, 100), color=(255, 255, 255))
@@ -130,8 +130,8 @@ async def generate_server_info_image(
     
     # 重构换行逻辑：维护一个"当前行"缓存
     lines_segments: List[List[TextSegment]] = []
-    current_line: List[TextSegment] = []  # 当前行片段列表
-    current_line_w: float = 0             # 当前行累计宽度
+    current_line: List[TextSegment] = []
+    current_line_w: float = 0
     
     def get_segment_width(text: str, is_bold: bool) -> float:
         """获取文本片段的宽度"""
@@ -141,7 +141,7 @@ async def generate_server_info_image(
         return temp_draw.textlength(text, font=font)
     
     def flush_current_line():
-        """将当前行推入lines_segments（如果非空）"""
+        """将当前行推入lines_segments"""
         nonlocal current_line, current_line_w
         if current_line:
             lines_segments.append(current_line)
@@ -156,48 +156,42 @@ async def generate_server_info_image(
         
         for part_idx, part in enumerate(parts):
             if not part:
-                # 遇到空部分或显式换行，直接开始新行
                 flush_current_line()
                 continue
             
             seg_w = get_segment_width(part, seg.is_bold)
             
             if current_line_w + seg_w <= max_motd_w:
-                # 当前行能容纳，直接添加
-                current_line.append(TextSegment(part, seg.color, seg.is_bold))
+                # 当前行能容纳，直接添加（使用黑色）
+                current_line.append(TextSegment(part, C_BLACK, seg.is_bold))
                 current_line_w += seg_w
             else:
                 # 当前行放不下，尝试按字符换行
                 if current_line:
                     flush_current_line()
                 
-                # 逐字符添加
+                # 逐字符添加（使用黑色）
                 char_w = 0
                 current_text = ""
                 for char in part:
                     single_char_w = get_segment_width(char, seg.is_bold)
                     if char_w + single_char_w > max_motd_w:
-                        # 当前行放不下，保存并开始新行
                         if current_text:
-                            current_line.append(TextSegment(current_text, seg.color, seg.is_bold))
+                            current_line.append(TextSegment(current_text, C_BLACK, seg.is_bold))
                         flush_current_line()
-                        # 开始新行
                         current_text = char
                         char_w = single_char_w
                     else:
                         current_text += char
                         char_w += single_char_w
                 
-                # 处理剩余文本
                 if current_text:
-                    current_line.append(TextSegment(current_text, seg.color, seg.is_bold))
+                    current_line.append(TextSegment(current_text, C_BLACK, seg.is_bold))
                     current_line_w = char_w
             
-            # 如果不是最后一个部分，开始新行
             if part_idx < len(parts) - 1:
                 flush_current_line()
     
-    # 处理最后一行
     flush_current_line()
 
     # 动态计算高度
@@ -261,7 +255,7 @@ async def generate_server_info_image(
     line_y = iy + icon_size + card_inner
     draw.line([ix, line_y, img_w - padding - card_inner, line_y], fill=C_BORDER, width=1)
 
-    # 5. 绘制 MOTD (多颜色片段渲染)
+    # 5. 绘制 MOTD (黑色文字，保留粗体)
     curr_y = line_y + 15
     for line_segs in lines_segments:
         curr_x = ix
