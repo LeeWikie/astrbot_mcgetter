@@ -1,1 +1,1 @@
-mcstatus
+mcstatus>=6.0.0,<13.0.0
