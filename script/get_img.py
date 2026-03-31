@@ -112,9 +112,9 @@ async def generate_server_info_image(
     font_medium = fonts['medium']
     
     font_main = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 18)
-    font_motd = _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 20)
-    font_small = _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 14)
-    font_tiny = _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 12)
+    font_motd = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 20)
+    font_small = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 14)
+    font_tiny = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 12)
 
     # 计算 MOTD 区域
     padding = 25
