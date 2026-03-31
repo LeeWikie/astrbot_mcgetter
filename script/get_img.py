@@ -136,13 +136,16 @@ async def generate_server_info_image(
         
         current_segment_text = ""
         for char in words:
-            char_w = temp_draw.textlength(char, font=active_font)
-            if current_w + char_w > max_motd_w:
-                # 换行
+            # 处理用户输入中的显式换行符，避免 textlength 无法处理多行文本
+            if char == '\n':
                 if current_segment_text:
                     current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
+                    current_segment_text = ""
                 lines_segments.append(current_line_segments)
-                # 重置
+                current_line_segments = []
+                current_w = 0
+                continue
+
                 current_line_segments = []
                 current_segment_text = char
                 current_w = char_w
