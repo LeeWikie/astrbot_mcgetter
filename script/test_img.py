@@ -104,6 +104,30 @@ async def test_bold_motd():
     return str(output_path)
 
 
+async def test_explicit_newline_bug():
+    """测试 5: 回归测试：显式换行与颜色标记不再抛错"""
+    motd = "§a第一行文本\n§b第二行文本-这是一个非常长的段落，用于测试自动换行是否正确工作且不会触发 textlength 异常。"
+    
+    result = await generate_server_info_image(
+        motd=motd,
+        latency=90,
+        server_name="回归测试服",
+        plays_max=30,
+        plays_online=7,
+        server_version="1.22.0",
+        icon_base64=None
+    )
+    
+    image_data = base64.b64decode(result)
+    output_path = Path(__file__).parent / "example_explicit_newline.png"
+    
+    with open(output_path, "wb") as f:
+        f.write(image_data)
+    
+    print(f"显式换行回归测试图片已保存到: {output_path}")
+    return str(output_path)
+
+
 if __name__ == "__main__":
     print("开始运行同步测试...")
     
@@ -112,9 +136,11 @@ if __name__ == "__main__":
     path2 = asyncio.run(test_colored_motd())
     path3 = asyncio.run(test_high_ping_red())
     path4 = asyncio.run(test_bold_motd())
+    path5 = asyncio.run(test_explicit_newline_bug())
     
     print(f"\n✅ 所有测试完成!")
     print(f"1. 基本测试: {path1}")
     print(f"2. 彩色MOTD: {path2}")
     print(f"3. 高延迟测试: {path3}")
     print(f"4. 格式测试: {path4}")
+    print(f"5. 显式换行回归测试: {path5}")

@@ -146,18 +146,13 @@ async def generate_server_info_image(
                 current_w = 0
                 continue
 
-                current_line_segments = []
-                current_segment_text = char
-                current_w = char_w
-            else:
-                current_segment_text += char
-                current_w += char_w
-        
-        if current_segment_text:
-            current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
-            
-    if current_line_segments:
-        lines_segments.append(current_line_segments)
+            char_w = temp_draw.textlength(char, font=active_font)
+            if current_w + char_w > max_motd_w:
+                # 换行
+                if current_segment_text:
+                    current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
+                lines_segments.append(current_line_segments)
+                # 重置当前行
 
     # 动态计算高度
     header_h = icon_size + card_inner * 2
