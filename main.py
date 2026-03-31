@@ -120,21 +120,21 @@ class MyPlugin(Star):
                     return
             
             servers = json_data.get("servers", {})
-            sent_any = False
+            images = []
             
             for server_id, server_info in servers.items():
                 try:
                     mcinfo_img = await self._fetch_and_generate_img(server_info['name'], server_info['host'], server_id, str(json_path))
                     if mcinfo_img:
-                        # 直接发送图片，不进行回复和艾特
-                        await event.reply([Comp.Image.fromBase64(mcinfo_img)])
-                        sent_any = True
+                        images.append(Comp.Image.fromBase64(mcinfo_img))
                 except Exception as e:
                     logger.error(f"处理服务器 {server_info['name']} 时出错: {e}")
                     continue
             
-            # 如果没有发送任何图片，发送提示
-            if not sent_any:
+            # 发送所有图片
+            if images:
+                yield event.chain_result(images)
+            else:
                 yield event.plain_result("没有可用的服务器信息，请检查服务器是否在线")
                 
         except Exception as e:
