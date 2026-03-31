@@ -1,51 +1,52 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import asyncio
 import io
 from pathlib import Path
 import base64
 from typing import Optional
 
-async def load_font(font_size):
-    # 尝试多路径加载
-    font_paths = [
-        Path(__file__).resolve().parent.parent/'resource'/'msyh.ttf',
-        'msyh.ttf',  # 当前目录
-        '/usr/share/fonts/zh_CN/msyh.ttf',  # Linux常见路径
-        'C:/Windows/Fonts/msyh.ttc',  # Windows路径
-        '/System/Library/Fonts/Supplemental/Songti.ttc'  # macOS路径
+async def load_font(font_size, weight="regular"):
+    """
+    加载更美观的字体
+    weight: 'bold' 或 'regular'
+    """
+    system_fonts = [
+        # macOS
+        '/System/Library/Fonts/PingFang.ttc',
+        '/System/Library/Fonts/STHeiti Light.ttc',
+        # Windows
+        'C:/Windows/Fonts/msyhhl.ttc',  # 微软雅黑细体
+        'C:/Windows/Fonts/msyh.ttc',    # 微软雅黑
+        # Linux 苹方字体 (需手动下载安装)
+        '/usr/share/fonts/opentype/PingFang.ttc',
+        '/usr/share/fonts/truetype/PingFang.ttc',
+        '/usr/share/fonts/PingFang.ttc',
+        '~/.fonts/PingFang.ttc',
+        '~/.local/share/fonts/PingFang.ttc',
+        # Linux 其他中文字体
+        '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+        '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+        '/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc'
     ]
     
-    for path in font_paths:
+    for path in system_fonts:
         try:
+            # 尝试加载
             return ImageFont.truetype(path, font_size)
         except OSError:
             continue
     
-    # 全部失败时使用默认字体（添加中文支持）
-    try:
-        # 尝试加载PIL的默认中文字体
-        return ImageFont.load_default().font_variant(size=font_size)
-    except:
-        return ImageFont.load_default()
-
-# 在代码中替换字体加载部分
-title_font = load_font(30)
-text_font = load_font(20)
-small_font = load_font(18)
+    return ImageFont.load_default()
 
 async def fetch_icon(icon_base64: Optional[str] = None) -> Optional[Image.Image]:
-    """处理Base64编码的服务器图标"""
-    if not icon_base64:
-        return None
-    
+    if not icon_base64: return None
     try:
-        # 去除可能的Base64前缀
         if "," in icon_base64:
             icon_base64 = icon_base64.split(",", 1)[1]
         icon_data = base64.b64decode(icon_base64)
         return Image.open(io.BytesIO(icon_data)).convert("RGBA")
-    except Exception as e:
-        print(f"Base64图标解码失败: {str(e)}")
+    except:
         return None
 
 async def generate_server_info_image(
@@ -57,82 +58,99 @@ async def generate_server_info_image(
     server_version: str,
     icon_base64: Optional[str] = None
 ) -> str:
-    """生成服务器信息图片并返回base64编码"""
+    # --- 现代配色方案 ---
+    COLOR_BG = (248, 250, 252)        # 极浅蓝灰 (Slate 50)
+    COLOR_CARD = (255, 255, 255)      # 纯白
+    COLOR_TITLE = (30, 41, 59)        # 深灰蓝 (Slate 800)
+    COLOR_SUBTITLE = (100, 116, 139)  # 中灰蓝 (Slate 500)
+    COLOR_PRIMARY = (59, 130, 246)    # 品牌蓝 (Blue 500)
+    COLOR_SUCCESS = (34, 197, 94)     # 成功绿 (Green 500)
+    COLOR_WARN = (245, 158, 11)       # 警告橙 (Amber 500)
+    COLOR_DANGER = (239, 68, 68)      # 危险红 (Red 500)
+    COLOR_BORDER = (226, 232, 240)    # 边框色 (Slate 200)
+
+    # 字体加载
+    font_bold = await load_font(28)
+    font_main = await load_font(18)
+    font_small = await load_font(14)
+
+    # 动态高度计算
+    padding = 30
+    player_chip_height = 35
+    players_per_row = 3
+    rows = (len(players_list) + players_per_row - 1) // players_per_row
+    content_height = 180 + (max(1, rows) * player_chip_height)
     
-    # 异步获取图标
+    img_w, img_h = 560, content_height + padding * 2
+    img = Image.new("RGB", (img_w, img_h), color=COLOR_BG)
+    draw = ImageDraw.Draw(img)
+
+    # 1. 绘制主体卡片投影效果 (简单模拟)
+    draw.rounded_rectangle([padding, padding, img_w-padding, img_h-padding], radius=16, fill=COLOR_CARD)
+    # 绘制一层极淡边框
+    draw.rounded_rectangle([padding, padding, img_w-padding, img_h-padding], radius=16, outline=COLOR_BORDER, width=1)
+
+    # 2. 绘制图标
+    icon_x, icon_y = padding + 25, padding + 25
+    icon_size = 80
     server_icon = await fetch_icon(icon_base64)
     
-    # 配置参数
-    BG_COLOR = (34, 34, 34)
-    TEXT_COLOR = (255, 255, 255)
-    ACCENT_COLOR = (85, 255, 85)
-    WARNING_COLOR = (255, 170, 0)
-    ERROR_COLOR = (255, 85, 85)
-    
-    # 字体配置
-    try:
-        title_font = await load_font(30)
-        text_font = await load_font(20)
-        small_font = await load_font(18)
-    except IOError:
-        title_font = ImageFont.load_default(30)
-        text_font = ImageFont.load_default(20)
-        small_font = ImageFont.load_default(18)
-    
-    # 计算布局参数
-    icon_size = 64 if server_icon else 0
-    base_y = 20
-    text_x = 20 + icon_size + 20
-    
-    # 自动计算图片高度
-    line_height = 30
-    player_lines = (len(players_list) // 4) + 1
-    img_height = 180 + (player_lines * line_height) + (20 if server_icon else 0)
-    
-    # 创建画布
-    img = Image.new("RGB", (600, img_height), color=BG_COLOR)
-    draw = ImageDraw.Draw(img)
-    
-    # 绘制服务器图标
     if server_icon:
-        icon_mask = Image.new("L", (64, 64), 0)
-        mask_draw = ImageDraw.Draw(icon_mask)
-        mask_draw.rounded_rectangle((0, 0, 64, 64), radius=10, fill=255)
-        server_icon.thumbnail((64, 64))
-        img.paste(server_icon, (20, base_y), icon_mask)
-    
-    # 服务器信息绘制（保持原有绘制逻辑不变）
-    draw.text((text_x, base_y), server_name, font=title_font, fill=ACCENT_COLOR)
-    base_y += 40
-    
-    version_text = f"版本: {server_version}"
-    latency_color = ACCENT_COLOR if latency < 100 else WARNING_COLOR if latency < 200 else ERROR_COLOR
-    latency_text = f"延迟: {latency}ms"
-    
-    draw.text((text_x, base_y), version_text, font=text_font, fill=TEXT_COLOR)
-    draw.text((400, base_y), latency_text, font=text_font, fill=latency_color)
-    base_y += 40
-    
-    online_text = f"在线玩家 ({plays_online}/{plays_max})"
-    draw.text((text_x, base_y), online_text, font=text_font, fill=ACCENT_COLOR)
-    base_y += 40
-    
-    if players_list:
-        chunks = [players_list[i:i+4] for i in range(0, len(players_list), 4)]
-        for chunk in chunks:
-            players_line = " • ".join(chunk)
-            draw.text((text_x + 20, base_y), players_line, font=small_font, fill=TEXT_COLOR)
-            base_y += line_height
+        server_icon = server_icon.resize((icon_size, icon_size), Image.Resampling.LANCZOS)
+        # 圆角剪切图标
+        mask = Image.new("L", (icon_size, icon_size), 0)
+        mask_draw = ImageDraw.Draw(mask)
+        mask_draw.rounded_rectangle((0, 0, icon_size, icon_size), radius=12, fill=255)
+        img.paste(server_icon, (icon_x, icon_y), mask)
     else:
-        draw.text((text_x + 20, base_y), "暂无玩家在线", font=small_font, fill=TEXT_COLOR)
-        base_y += line_height
-    
-    draw.rounded_rectangle([10, 10, img.width-10, img.height-10], radius=10, outline=ACCENT_COLOR, width=2)
-    
-    # 转换为base64
-    buffer = io.BytesIO()
-    img.save(buffer, format="PNG")
-    img_base64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        # 无图标时画一个带字母的占位符
+        draw.rounded_rectangle([icon_x, icon_y, icon_x+icon_size, icon_y+icon_size], radius=12, fill=COLOR_PRIMARY)
+        draw.text((icon_x+28, icon_y+20), server_name[0] if server_name else "?", font=font_bold, fill=(255,255,255))
 
-    # 返回base64 bytes
-    return img_base64
+    # 3. 服务器名称与版本
+    text_offset_x = icon_x + icon_size + 20
+    draw.text((text_offset_x, icon_y + 5), server_name, font=font_bold, fill=COLOR_TITLE)
+    
+    # 版本号胶囊
+    ver_w = draw.textlength(f" {server_version} ", font=font_small)
+    draw.rounded_rectangle([text_offset_x, icon_y + 45, text_offset_x + ver_w + 10, icon_y + 65], radius=5, fill=COLOR_BG)
+    draw.text((text_offset_x + 5, icon_y + 47), server_version, font=font_small, fill=COLOR_SUBTITLE)
+
+    # 4. 状态栏 (延迟 & 在线人数)
+    status_y = icon_y + icon_size + 30
+    
+    # 延迟指示器
+    lat_color = COLOR_SUCCESS if latency < 80 else COLOR_WARN if latency < 150 else COLOR_DANGER
+    draw.ellipse([icon_x, status_y + 6, icon_x + 8, status_y + 14], fill=lat_color)
+    draw.text((icon_x + 18, status_y), f"{latency}ms", font=font_main, fill=COLOR_SUBTITLE)
+
+    # 在线人数
+    online_txt = f"在线人数: {plays_online} / {plays_max}"
+    tw = draw.textlength(online_txt, font=font_main)
+    draw.text((img_w - padding - 25 - tw, status_y), online_txt, font=font_main, fill=COLOR_TITLE)
+
+    # 分割线
+    line_y = status_y + 35
+    draw.line([icon_x, line_y, img_w - padding - 25, line_y], fill=COLOR_BORDER, width=1)
+
+    # 5. 玩家列表 (采用网格排列)
+    list_y = line_y + 20
+    if players_list:
+        for i, player in enumerate(players_list):
+            row = i // players_per_row
+            col = i % players_per_row
+            px = icon_x + col * ((img_w - 2*padding - 50) // players_per_row)
+            py = list_y + row * player_chip_height
+            
+            # 玩家小点
+            draw.ellipse([px, py + 7, px + 4, py + 11], fill=COLOR_PRIMARY)
+            # 玩家名字（截断处理）
+            display_name = player[:10] + ".." if len(player) > 10 else player
+            draw.text((px + 12, py), display_name, font=font_main, fill=COLOR_SUBTITLE)
+    else:
+        draw.text((icon_x, list_y), "目前没有玩家在线", font=font_main, fill=COLOR_SUBTITLE)
+
+    # 导出
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG", optimize=True)
+    return base64.b64encode(buffer.getvalue()).decode("utf-8")
