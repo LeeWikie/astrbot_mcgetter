@@ -5,8 +5,15 @@ from typing import Optional, List
 from pathlib import Path
 
 async def load_font(font_size):
-    # 使用内置字体目录
-    font_path = Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang-Regular.ttf'
+    """加载两种字体"""
+    font_dir = Path(__file__).resolve().parent.parent / 'fonts'
+    return {
+        'bold': await _load_single_font(font_dir / 'PingFang Bold.ttf', font_size),
+        'medium': await _load_single_font(font_dir / 'PingFang Medium.ttf', font_size)
+    }
+
+async def _load_single_font(font_path: Path, font_size: int):
+    """加载单个字体文件"""
     try:
         return ImageFont.truetype(str(font_path), font_size)
     except:
@@ -64,11 +71,15 @@ async def generate_server_info_image(
     COLOR_WARN = (245, 158, 11)
     COLOR_DANGER = (239, 68, 68)
 
-    # 字体预加载（用于计算高度）
-    font_title = await load_font(28)
-    font_main = await load_font(18)
-    font_motd = await load_font(20)
-    font_small = await load_font(14)
+    # 字体预加载（用于计算高度）- Bold用于标题，Medium用于其它
+    fonts = await load_font(28)
+    font_bold = fonts['bold']
+    font_medium = fonts['medium']
+    
+    # Medium字体用于小字号
+    font_main = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 18)
+    font_motd = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 20)
+    font_small = await _load_single_font(Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang Medium.ttf', 14)
 
     # 1. 核心逻辑：先在虚拟画布上计算换行和高度
     padding = 30
@@ -109,11 +120,11 @@ async def generate_server_info_image(
         img.paste(server_icon, (icon_x, icon_y), mask)
     else:
         draw.rounded_rectangle([icon_x, icon_y, icon_x+icon_size, icon_y+icon_size], radius=12, fill=COLOR_PRIMARY)
-        draw.text((icon_x + 20, icon_y + 15), "MC", font=font_title, fill=(255,255,255))
+        draw.text((icon_x + 20, icon_y + 15), "MC", font=font_bold, fill=(255,255,255))
 
     # 标题 & 版本
     text_x = icon_x + icon_size + 18
-    draw.text((text_x, icon_y + 2), server_name, font=font_title, fill=COLOR_TITLE)
+    draw.text((text_x, icon_y + 2), server_name, font=font_bold, fill=COLOR_TITLE)
     
     ver_text = f" {server_version} "
     vw = draw.textlength(ver_text, font=font_small)

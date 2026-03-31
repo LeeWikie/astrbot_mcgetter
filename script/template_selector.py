@@ -102,13 +102,13 @@ async def _generate_default_image(
 ) -> str:
     """生成默认服务器信息图片的辅助函数。"""
     return await generate_server_info_image(
+        motd=motd,
         latency=latency,
         server_name=server_name,
         plays_max=plays_max,
         plays_online=plays_online,
         server_version=server_version,
-        icon_base64=icon_base64,
-        motd=motd
+        icon_base64=icon_base64
     )
 
 def write_config(template_name: str) -> bool:
