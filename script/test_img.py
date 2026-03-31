@@ -19,7 +19,8 @@ async def test_basic_motd():
         plays_max=20,
         plays_online=5,
         server_version="1.20.4",
-        icon_base64=None
+        icon_base64=None,
+        server_ip="test.mcserver.com"
     )
 
     image_data = base64.b64decode(result)
@@ -43,7 +44,8 @@ async def test_colored_motd():
         plays_max=100,
         plays_online=12,
         server_version="1.21.1",
-        icon_base64=None
+        icon_base64=None,
+        server_ip="color.mcserver.com"
     )
     
     image_data = base64.b64decode(result)
@@ -67,7 +69,8 @@ async def test_high_ping_red():
         plays_max=50,
         plays_online=3,
         server_version="1.20.2",
-        icon_base64=None
+        icon_base64=None,
+        server_ip="ping.mcserver.com"
     )
     
     image_data = base64.b64decode(result)
@@ -91,7 +94,8 @@ async def test_bold_motd():
         plays_max=20,
         plays_online=8,
         server_version="1.20.4",
-        icon_base64=None
+        icon_base64=None,
+        server_ip="bold.mcserver.com"
     )
     
     image_data = base64.b64decode(result)
@@ -115,7 +119,8 @@ async def test_explicit_newline_bug():
         plays_max=30,
         plays_online=7,
         server_version="1.22.0",
-        icon_base64=None
+        icon_base64=None,
+        server_ip="test.mcserver.com"
     )
     
     image_data = base64.b64decode(result)

@@ -109,7 +109,7 @@ async def generate_server_info_image(
     f_main = await load_font("PingFang Medium", 18)
     f_motd = await load_font("PingFang Medium", 20)
     f_motd_bold = await load_font("PingFang Bold", 20)
-    f_ip_bold = await load_font("PingFang Bold", 14) # IP专用加粗
+    f_ip_bold = await load_font("PingFang Bold", 18) # IP专用加粗
     f_tiny = await load_font("PingFang Medium", 13)
 
     # --- 预计算阶段 ---
@@ -126,22 +126,24 @@ async def generate_server_info_image(
     all_segments = parse_minecraft_string(display_motd, default_color=C_SUB)
     
     lines_segments: List[List[TextSegment]] = []
-    current_line_segments = []
-    current_w = 0
     
     for seg in all_segments:
         # 对每一个片段处理可能的长文本换行
         words = seg.text # 这里不按空格分，MC按字符宽度
         active_font = f_motd_bold if seg.is_bold else f_motd
         
+        current_line_segments = []
+        current_w = 0
         current_segment_text = ""
+        
         for char in words:
             # 处理用户输入中的显式换行符，避免 textlength 无法处理多行文本
             if char == '\n':
                 if current_segment_text:
                     current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
                     current_segment_text = ""
-                lines_segments.append(current_line_segments)
+                if current_line_segments:
+                    lines_segments.append(current_line_segments)
                 current_line_segments = []
                 current_w = 0
                 continue
@@ -151,8 +153,21 @@ async def generate_server_info_image(
                 # 换行
                 if current_segment_text:
                     current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
-                lines_segments.append(current_line_segments)
+                if current_line_segments:
+                    lines_segments.append(current_line_segments)
                 # 重置当前行
+                current_line_segments = []
+                current_w = 0
+                current_segment_text = ""
+            
+            current_segment_text += char
+            current_w += char_w
+        
+        # 处理片段末尾剩余内容
+        if current_segment_text:
+            current_line_segments.append(TextSegment(current_segment_text, seg.color, seg.is_bold))
+        if current_line_segments:
+            lines_segments.append(current_line_segments)
 
     # 动态计算高度
     header_h = icon_size + card_inner * 2
@@ -194,7 +209,7 @@ async def generate_server_info_image(
     
     # 绘制 IP (加粗)
     if server_ip:
-        draw.text((tx, iy + 62), server_ip, font=f_ip_bold, fill=C_SUB)
+        draw.text((tx, iy + 58), server_ip, font=f_ip_bold, fill=C_SUB)
 
     # 状态行
     status_y = iy + 82
