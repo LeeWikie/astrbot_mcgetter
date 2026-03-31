@@ -2,20 +2,15 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import base64
 from typing import Optional, List
+from pathlib import Path
 
 async def load_font(font_size):
-    system_fonts = [
-        '/System/Library/Fonts/PingFang.ttc', # macOS
-        'C:/Windows/Fonts/msyh.ttc',           # Windows
-        '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc', # Linux
-        'msyh.ttf'
-    ]
-    for path in system_fonts:
-        try:
-            return ImageFont.truetype(path, font_size)
-        except:
-            continue
-    return ImageFont.load_default()
+    # 使用内置字体目录
+    font_path = Path(__file__).resolve().parent.parent / 'fonts' / 'PingFang-Regular.ttf'
+    try:
+        return ImageFont.truetype(str(font_path), font_size)
+    except:
+        return ImageFont.load_default()
 
 def wrap_text(text: str, font, max_width: int, draw: ImageDraw.Draw) -> List[str]:
     """根据像素宽度精确折行"""

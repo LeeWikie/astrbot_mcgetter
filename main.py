@@ -119,21 +119,21 @@ class MyPlugin(Star):
                     yield event.plain_result("所有服务器已被清理，请重新添加服务器")
                     return
             
-            message_chain: List[Comp.Image] = []
             servers = json_data.get("servers", {})
+            sent_any = False
             
             for server_id, server_info in servers.items():
                 try:
                     mcinfo_img = await self.get_img(server_info['name'], server_info['host'], server_id, str(json_path))
                     if mcinfo_img:
-                        message_chain.append(Comp.Image.fromBase64(mcinfo_img))
-
+                        # 直接发送图片，不进行回复和艾特
+                        await event.reply([Comp.Image.fromBase64(mcinfo_img)])
+                        sent_any = True
                 except Exception as e:
                     continue
-
-            if message_chain:
-                yield event.chain_result(message_chain)
-            else:
+            
+            # 如果没有发送任何图片，发送提示
+            if not sent_any:
                 yield event.plain_result("没有可用的服务器信息，请检查服务器是否在线")
                 
         except Exception as e:
